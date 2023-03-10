@@ -1,8 +1,21 @@
-const WebSocket = require("ws")
-const server = new WebSocket.Server({port:'8080'})
+const { instrument } = require("@socket.io/admin-ui")
+const io = require("socket.io")(3000, {
+    cors: {
+        origin: ["http://localhost:8080","https://admin.socket.io"],
+        credentials: true
+    }
+})
 
-server.on('connection',socket=>{
-    socket.on('message',message=>{
-        socket.send(`roger that ${message}`)
+io.on("connection", socket => {
+    console.log(socket.id)
+    socket.on("send-message", (message, room) => {
+        if (room === "") { socket.broadcast.emit("receive-message", message) }
+        else { socket.to(room).emit("receive-message", message) }
+    })
+    socket.on("join-room", (room, cb) => {
+        socket.join(room)
+        cb(`joined the room ${room}`)
     })
 })
+
+instrument(io, { auth: false })
